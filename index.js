@@ -10,7 +10,9 @@ const port = process.env.PORT || 3100
 app.use(cors())
 app.use(express.json())
 
-
+const corsOption = [
+    origin = 'http://localhost:5173/'
+]
 
 
 // const uri = `mongodb+srv://${process.env.USER_ID}:${process.env.USER_PASS}@cluster0.huqehxg.mongodb.net/?retryWrites=true&w=majority`;
@@ -50,6 +52,12 @@ async function run() {
             const cartItems = req.body;
             const result = await cartCollection.insertOne(cartItems)
             res.send(result);
+        })
+        app.get('/carts', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email }
+            const result = await cartCollection.find(query).toArray();
+            res.send(result)
         })
 
         // Send a ping to confirm a successful connection
