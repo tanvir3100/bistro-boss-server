@@ -7,12 +7,13 @@ const port = process.env.PORT || 3100
 
 
 //middleware
-app.use(cors())
+const corsOption = {
+    origin: 'http://localhost:5173'
+}
+
+app.use(cors(corsOption))
 app.use(express.json())
 
-const corsOption = [
-    origin = 'http://localhost:5173/'
-]
 
 
 // const uri = `mongodb+srv://${process.env.USER_ID}:${process.env.USER_PASS}@cluster0.huqehxg.mongodb.net/?retryWrites=true&w=majority`;
@@ -50,12 +51,43 @@ async function run() {
         })
 
         //users collection
+        app.get('/users', async (req, res) => {
+            const result = await userCollection.find().toArray();
+            res.send(result)
+        })
+
         app.post('/users', async (req, res) => {
             const user = req.body;
+            // insert email if user dose not exists:
+            // you can do this many ways (1. email unique, 2. upsert, 3. simple checking)
+            const query = { email: user.email }
+            const existingUser = await userCollection.findOne(query);
+            if (existingUser) {
+                return res.send({ message: 'user already exists', insertedId: null })
+            }
             const result = await userCollection.insertOne(user);
             res.send(result)
         })
 
+        // menu related apis
+        app.delete('/users/:id', async (req, res) => {
+            const id = req.params.id
+            const query = { _id: new ObjectId(id) }
+            const result = await userCollection.deleteOne(query);
+            res.send(result)
+        })
+
+        app.patch('/users/admin/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                }
+            }
+            const result = await userCollection.updateOne(filter, updateDoc)
+            req.send(result)
+        })
 
 
 
