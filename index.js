@@ -4,13 +4,15 @@ const jwt = require('jsonwebtoken')
 const cors = require('cors')
 require('dotenv').config()
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 3100
 
 
 //middleware
-const corsOption = {
-    origin: 'http://localhost:5173'
-}
+origin: [
+    'http://localhost:5173', // Local development
+    'https://sip-bite.web.app' // Production
+],
 
 app.use(cors(corsOption))
 app.use(express.json())
@@ -168,11 +170,10 @@ async function run() {
             const filter = { _id: new ObjectId(id) };
             const updateDoc = {
                 $set: {
-                    name: item.name,
-                    category: item.category,
+                    title: item.title,
                     price: item.price,
-                    recipe: item.recipe,
-                    image: item.image
+                    image: item.image,
+                    description: item.description
                 }
             }
             const result = await menuCollection.updateOne(filter, updateDoc);
@@ -187,6 +188,19 @@ async function run() {
         app.get('/reviews', async (req, res) => {
             const result = await reviewCollection.find().toArray();
             res.send(result)
+        })
+        //payment intent
+        app.post('/create-payment-intent', async (req, res) => {
+            const { price } = req.body;
+            const amount = parseInt(price * 100);
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            })
+            res.send({
+                clientSecret: paymentIntent.client_secret,
+            })
         })
 
         // Send a ping to confirm a successful connection
